@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: test-app-servicemonitor
+  namespace: test-monitoring-app
+spec:
+  selector:
+    matchLabels:
+      app: test-app
+  endpoints:
+    - port: "8080"
+      interval: 30s
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-app-logging-config
+  namespace: test-monitoring-app
+data:
+  loki.yaml: |
+    pipeline_stages:
+      - json
+      - labels:
+          app: test-app
