@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: text-editor
   endpoints:
-    - port: metrics
+    - port: http
       interval: 30s
 ---
 apiVersion: v1
