@@ -3,22 +3,29 @@ kind: ServiceMonitor
 metadata:
   name: text-editor-servicemonitor
   namespace: text-editor-app
+  labels:
+    app.kubernetes.io/name: text-editor
 spec:
   selector:
     matchLabels:
       app: text-editor
   endpoints:
-    - port: metrics
+    - port: http
       interval: 30s
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: text-editor-logging-config
+  name: text-editor-logging-labels
   namespace: text-editor-app
+  labels:
+    app.kubernetes.io/name: text-editor
+    logging.coreos.com/collect: "true"
 data:
-  loki.yaml: |
-    pipeline_stages:
-      - json
-      - labels:
-          app: text-editor
+  app_name: "text-editor"
+  loki_labels: |
+    {
+      "app": "text-editor",
+      "namespace": "text-editor-app",
+      "component": "application"
+    }
