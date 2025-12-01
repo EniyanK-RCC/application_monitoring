@@ -65,36 +65,3 @@ data:
       "namespace": "text-editor-app",
       "component": "application"
     }
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "text-editor-dashboard"
-  namespace: "text-editor-app"
-  labels:
-    app.kubernetes.io/name: "text-editor"
-    grafana_dashboard: "true"
-data:
-  dashboard.json: |
-    {
-      "dashboard": {
-        "title": "Text-Editor Metrics",
-        "panels": [
-          {
-            "title": "Request Rate",
-            "targets": [
-              {
-                "expr": "rate(http_requests_total{job='text-editor'}[5m])"
-              }
-            ]
-          },
-          {
-            "title": "Error Rate",
-            "targets": [
-              {
-                "expr": "rate(http_requests_total{job='text-editor',status=~'5..'}[5m])"
-              }
-            ]
-          }
-        ]
-      }
