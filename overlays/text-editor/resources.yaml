@@ -1,8 +1,46 @@
 apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: "text-editor-alerts"
+  namespace: "text-editor-app"
+  labels:
+    app.kubernetes.io/name: "text-editor"
+spec:
+  groups:
+    - name: "text-editor.rules"
+      interval: 30s
+      rules:
+        - alert: ApplicationPodDown
+          expr: |
+            up{job="text-editor", namespace="text-editor-app"} == 0
+          for: 5m
+          labels:
+            severity: critical
+            app: "text-editor"
+          annotations:
+            summary: "Application text-editor pod is down"
+            description: "Pod text-editor in namespace text-editor-app has been down for more than 5 minutes"
+        - alert: HighErrorRate
+          expr: |
+            rate(http_requests_total{job="text-editor", namespace="text-editor-app", status=~"5.."}[5m]) > 0.05
+          for: 10m
+          labels:
+            severity: warning
+            app: "text-editor"
+          annotations:
+            summary: "High error rate detected for text-editor"
+            description: "Error rate is above 5% for the last 10 minutes"
+        - record: "text-editor:http_requests:rate5m"
+          expr: |
+            rate(http_requests_total{job="text-editor", namespace="text-editor-app"}[5m])
+---      
+apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: text-editor-servicemonitor
   namespace: text-editor-app
+  labels:
+    app.kubernetes.io/name: text-editor
 spec:
   selector:
     matchLabels:
@@ -14,11 +52,49 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: text-editor-logging-config
+  name: text-editor-logging-labels
   namespace: text-editor-app
+  labels:
+    app.kubernetes.io/name: text-editor
+    logging.coreos.com/collect: "true"
 data:
-  loki.yaml: |
-    pipeline_stages:
-      - json
-      - labels:
-          app: text-editor
+  app_name: "text-editor"
+  loki_labels: |
+    {
+      "app": "text-editor",
+      "namespace": "text-editor-app",
+      "component": "application"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "text-editor-dashboard"
+  namespace: "text-editor-app"
+  labels:
+    app.kubernetes.io/name: "text-editor"
+    grafana_dashboard: "true"
+data:
+  dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Text-Editor Metrics",
+        "panels": [
+          {
+            "title": "Request Rate",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job='text-editor'}[5m])"
+              }
+            ]
+          },
+          {
+            "title": "Error Rate",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job='text-editor',status=~'5..'}[5m])"
+              }
+            ]
+          }
+        ]
+      }
